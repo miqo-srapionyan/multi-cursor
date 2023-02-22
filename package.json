@@ -1,0 +1,29 @@
+{
+  "name": "multi-cursor",
+  "version": "1.0.0",
+  "description": "Multi cursor in one page.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/miqo-srapionyan/multi-cursor.git"
+  },
+  "keywords": [
+    "cursor",
+    "multi-cursor",
+    "socket"
+  ],
+  "author": "Miqayel Srapionyan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/miqo-srapionyan/multi-cursor/issues"
+  },
+  "homepage": "https://github.com/miqo-srapionyan/multi-cursor#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "socket.io": "^4.6.0"
+  }
+}

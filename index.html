@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Multi Cursor</title>
+    <style>
+        body {
+            cursor: none;
+        }
+
+        #canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
+
+        .cursor {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+        }
+
+        .name {
+            position: absolute;
+            color: black;
+        }
+
+    </style>
+</head>
+<body>
+
+<section id="canvas">
+
+</section>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    const canvas = document.getElementById('canvas');
+    const cursors = {};
+    const sessionId = localStorage.getItem("sessionId");
+    const color = localStorage.getItem("color");
+    const name = localStorage.getItem("name");
+
+    socket.on("session", ({sessionId, color, name}) => {
+        // attach the session ID to the next reconnection attempts
+        socket.auth = {sessionId};
+        // save the color of the user
+        socket.color = color;
+        socket.name = name;
+
+        // store it in the localStorage
+        localStorage.setItem("sessionId", sessionId);
+        localStorage.setItem("color", color);
+        localStorage.setItem("name", name);
+    });
+
+    if (sessionId) {
+        socket.auth = {sessionId};
+        socket.color = color;
+        socket.name = name;
+        socket.connect();
+    }
+
+    socket.on('user-disconnected', (sessionId) => {
+        delete cursors[sessionId];
+        const img = document.getElementById('cursor-' + sessionId);
+        img.remove();
+        const span = document.getElementById('name-' + sessionId);
+        span.remove();
+    })
+
+    // init, get existing positions, render cursors
+    socket.on('init', (positions) => {
+        for (const sessionId in positions) {
+            if (!cursors.hasOwnProperty(sessionId)) {
+                const nameSpan = generateSpan(sessionId, positions[sessionId]['name']); //name
+                const img = generateImg(sessionId, positions[sessionId]['color']);
+                cursors[sessionId] = img;
+                canvas.appendChild(img);
+                canvas.appendChild(nameSpan);
+            }
+
+            setPositions({
+                x: positions[sessionId]['x'],
+                y: positions[sessionId]['y']
+            }, sessionId);
+
+        }
+    });
+
+    canvas.addEventListener('mousemove', (event) => {
+        event.preventDefault();
+
+        const data = {x: event.pageX, y: event.pageY, color: socket.color, name: socket.name};
+        socket.emit('update-positions', data);
+        setPositions(data, socket.auth.sessionId);
+    });
+
+    socket.on('update-positions-client', (positions) => {
+        for (const sessionId in positions) {
+            setPositions({
+                x: positions[sessionId]['x'],
+                y: positions[sessionId]['y']
+            }, sessionId);
+        }
+    })
+
+    function generateSpan(sessionId, name) {
+        let span = document.createElement('span');
+        span.classList.add('name');
+        span.id = 'name-' + sessionId;
+        span.innerHTML = name;
+
+        return span;
+    }
+
+    function generateImg(sessionId, color = null) {
+        console.log(color);
+        let img = document.createElement('img');
+        img.style.filter = color
+        img.src = '/cursor.svg';
+        img.classList.add('cursor');
+        img.id = 'cursor-' + sessionId;
+
+        return img;
+    }
+
+    function setPositions(data, sessionId) {
+        cursors[sessionId].style.top = data.y + 'px';
+        cursors[sessionId].style.left = data.x + 'px';
+
+        const name = document.getElementById('name-' + sessionId);
+        name.style.top = data.y + 12 + 'px';
+        name.style.left = data.x + 12 + 'px';
+    }
+</script>
+</body>
+</html>
