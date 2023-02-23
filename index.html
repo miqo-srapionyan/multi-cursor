@@ -80,21 +80,23 @@
     // init, get existing positions, render cursors
     socket.on('init', (positions) => {
         for (const sessionId in positions) {
-            if (!cursors.hasOwnProperty(sessionId)) {
-                const nameSpan = generateSpan(sessionId, positions[sessionId]['name']); //name
-                const img = generateImg(sessionId, positions[sessionId]['color']);
-                cursors[sessionId] = img;
-                canvas.appendChild(img);
-                canvas.appendChild(nameSpan);
-            }
+            createCursor({sessionId, name: positions[sessionId]['name'], color: positions[sessionId]['color']});
 
             setPositions({
                 x: positions[sessionId]['x'],
                 y: positions[sessionId]['y']
             }, sessionId);
-
         }
     });
+
+    socket.on('user-joined', (userPositions, sessionId) => {
+        createCursor({sessionId, name: userPositions['name'], color: userPositions['color']});
+
+        setPositions({
+            x: userPositions['x'],
+            y: userPositions['y']
+        }, sessionId);
+    })
 
     canvas.addEventListener('mousemove', (event) => {
         event.preventDefault();
@@ -123,7 +125,6 @@
     }
 
     function generateImg(sessionId, color = null) {
-        console.log(color);
         let img = document.createElement('img');
         img.style.filter = color
         img.src = '/cursor.svg';
@@ -141,6 +142,17 @@
         name.style.top = data.y + 12 + 'px';
         name.style.left = data.x + 12 + 'px';
     }
+
+    function createCursor({sessionId, name, color}) {
+        if (!cursors.hasOwnProperty(sessionId)) {
+            const nameSpan = generateSpan(sessionId, name); //name
+            const img = generateImg(sessionId, color);
+            cursors[sessionId] = img;
+            canvas.appendChild(img);
+            canvas.appendChild(nameSpan);
+        }
+    }
+
 </script>
 </body>
 </html>
