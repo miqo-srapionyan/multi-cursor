@@ -49,14 +49,15 @@ io.on('connection', (socket) => {
     positions[socket.sessionId] = {x: 0, y: 0, color: socket.color, name: socket.name};
 
     socket.emit('init', positions);
+    socket.broadcast.emit('user-joined', positions[socket.sessionId], socket.sessionId);
     socket.on('update-positions', (coordinates) => {
         positions[socket.sessionId] = {x: coordinates['x'], y: coordinates['y'], color: socket.color, name: socket.name};
         socket.broadcast.emit('update-positions-client', positions);
     });
 });
 
-server.listen(3000, () => {
-    console.log('listening on *:3000');
+server.listen(3001, () => {
+    console.log('listening on *:3001');
 });
 
 function generateId() {
