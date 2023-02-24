@@ -45,21 +45,18 @@
     const socket = io();
     const canvas = document.getElementById('canvas');
     const cursors = {};
-    const sessionId = localStorage.getItem("sessionId");
-    const color = localStorage.getItem("color");
-    const name = localStorage.getItem("name");
+    const {sessionId, color, name} = JSON.parse(localStorage.getItem("session"));
 
     socket.on("session", ({sessionId, color, name}) => {
         // attach the session ID to the next reconnection attempts
         socket.auth = {sessionId};
         // save the color of the user
         socket.color = color;
+        // save the name of the user
         socket.name = name;
 
         // store it in the localStorage
-        localStorage.setItem("sessionId", sessionId);
-        localStorage.setItem("color", color);
-        localStorage.setItem("name", name);
+        localStorage.setItem("session", JSON.stringify({sessionId, color, name}));
     });
 
     if (sessionId) {
@@ -69,6 +66,7 @@
         socket.connect();
     }
 
+    // on user disconnect, remove cursor
     socket.on('user-disconnected', (sessionId) => {
         delete cursors[sessionId];
         const img = document.getElementById('cursor-' + sessionId);
@@ -80,11 +78,12 @@
     // init, get existing positions, render cursors
     socket.on('init', (positions) => {
         for (const sessionId in positions) {
+            // create cursors with sessionId, if not exists
             if (!cursors.hasOwnProperty(sessionId)) {
-                const nameSpan = generateSpan(sessionId, positions[sessionId]['name']); //name
-                const img = generateImg(sessionId, positions[sessionId]['color']);
-                cursors[sessionId] = img;
-                canvas.appendChild(img);
+                const nameSpan = generateSpan(sessionId, positions[sessionId]['name']);
+                const cursorImg = generateImg(sessionId, positions[sessionId]['color']);
+                cursors[sessionId] = cursorImg;
+                canvas.appendChild(cursorImg);
                 canvas.appendChild(nameSpan);
             }
 
@@ -92,17 +91,11 @@
                 x: positions[sessionId]['x'],
                 y: positions[sessionId]['y']
             }, sessionId);
-
         }
     });
 
-    canvas.addEventListener('mousemove', (event) => {
-        event.preventDefault();
-
-        const data = {x: event.pageX, y: event.pageY, color: socket.color, name: socket.name};
-        socket.emit('update-positions', data);
-        setPositions(data, socket.auth.sessionId);
-    });
+    canvas.addEventListener('mousemove', eventHandler); // handle mousemove event
+    canvas.addEventListener('ontouchmove', eventHandler); // handle touch event
 
     socket.on('update-positions-client', (positions) => {
         for (const sessionId in positions) {
@@ -111,8 +104,18 @@
                 y: positions[sessionId]['y']
             }, sessionId);
         }
-    })
+    });
 
+    // event handler for mouse and touch events
+    function eventHandler(event) {
+        event.preventDefault();
+
+        const data = {x: event.pageX, y: event.pageY, color: socket.color, name: socket.name};
+        socket.emit('update-positions', data);
+        setPositions(data, socket.auth.sessionId);
+    }
+
+    // generates span tag for name
     function generateSpan(sessionId, name) {
         let span = document.createElement('span');
         span.classList.add('name');
@@ -122,8 +125,8 @@
         return span;
     }
 
+    // generate image, with cursor svg
     function generateImg(sessionId, color = null) {
-        console.log(color);
         let img = document.createElement('img');
         img.style.filter = color
         img.src = '/cursor.svg';
@@ -133,13 +136,15 @@
         return img;
     }
 
+    // set cursor positions
     function setPositions(data, sessionId) {
-        cursors[sessionId].style.top = data.y + 'px';
-        cursors[sessionId].style.left = data.x + 'px';
+        const cursorStyle = cursors[sessionId].style;
+        cursorStyle.top = data.y + 'px';
+        cursorStyle.left = data.x + 'px';
 
-        const name = document.getElementById('name-' + sessionId);
-        name.style.top = data.y + 12 + 'px';
-        name.style.left = data.x + 12 + 'px';
+        const nameStyle = document.getElementById('name-' + sessionId).style;
+        nameStyle.top = data.y + 12 + 'px';
+        nameStyle.left = data.x + 12 + 'px';
     }
 </script>
 </body>
