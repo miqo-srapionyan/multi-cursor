@@ -29,7 +29,7 @@ io.use((socket, next) => {
     }
 
     // create new session
-    socket.sessionId = generateId();
+    socket.sessionId = generateSessionId();
     socket.color = generateColor();
     socket.name = getRandomName();
     sessionStore.saveSession(sessionId, {color: socket.color, name: socket.name});
@@ -37,6 +37,7 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
+    // send session to client
     socket.emit('session', {color: socket.color, sessionId: socket.sessionId, name: socket.name});
 
     socket.on("disconnect", async () => {
@@ -46,13 +47,24 @@ io.on('connection', (socket) => {
         delete socket.sessionId;
     });
 
+    // set initial positions
     positions[socket.sessionId] = {x: 0, y: 0, color: socket.color, name: socket.name};
 
+    // send all positions on initialization
     socket.emit('init', positions);
+
+    // notify about new user joined
     socket.broadcast.emit('user-joined', positions[socket.sessionId], socket.sessionId);
+
+    // on client changes, mouseevent, touch event
     socket.on('update-positions', (coordinates) => {
-        positions[socket.sessionId] = {x: coordinates['x'], y: coordinates['y'], color: socket.color, name: socket.name};
-        socket.broadcast.emit('update-positions-client', positions);
+        positions[socket.sessionId] = {
+            x: coordinates['x'],
+            y: coordinates['y'],
+            color: socket.color,
+            name: socket.name
+        };
+        socket.broadcast.emit('update-positions-client', positions); // inform clients about current users changes
     });
 });
 
@@ -60,10 +72,11 @@ server.listen(3001, () => {
     console.log('listening on *:3001');
 });
 
-function generateId() {
+function generateSessionId() {
     return Math.random().toString(36).replace(/[^a-z]+/g, '');
 }
 
+// generate color for svg
 function generateColor() {
     let invert = Math.floor(Math.random() * 100) + 1 + '%';
     let sepia = Math.floor(Math.random() * 100) + 1 + '%';
@@ -73,6 +86,7 @@ function generateColor() {
     return `invert(${invert}) sepia(${sepia}) saturate(${saturate}) hue-rotate(${deg}) brightness(100%) contrast(100%)`;
 }
 
+// get random animal name from list
 function getRandomName() {
     return reservedNames[Math.floor(Math.random() * reservedNames.length)]
 }

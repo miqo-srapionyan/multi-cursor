@@ -45,8 +45,9 @@
     const socket = io();
     const canvas = document.getElementById('canvas');
     const cursors = {};
-    const {sessionId, color, name} = JSON.parse(localStorage.getItem("session"));
+    const {sessionId, color, name} = JSON.parse(localStorage.getItem("session")) ?? {};
 
+    // get session from backend
     socket.on("session", ({sessionId, color, name}) => {
         // attach the session ID to the next reconnection attempts
         socket.auth = {sessionId};
@@ -59,6 +60,7 @@
         localStorage.setItem("session", JSON.stringify({sessionId, color, name}));
     });
 
+    // if session already exists
     if (sessionId) {
         socket.auth = {sessionId};
         socket.color = color;
@@ -100,6 +102,7 @@
     canvas.addEventListener('mousemove', eventHandler); // handle mousemove event
     canvas.addEventListener('ontouchmove', eventHandler); // handle touch event
 
+    // update other users positions
     socket.on('update-positions-client', (positions) => {
         for (const sessionId in positions) {
             setPositions({
