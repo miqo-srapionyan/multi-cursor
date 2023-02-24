@@ -78,14 +78,7 @@
     // init, get existing positions, render cursors
     socket.on('init', (positions) => {
         for (const sessionId in positions) {
-            // create cursors with sessionId, if not exists
-            if (!cursors.hasOwnProperty(sessionId)) {
-                const nameSpan = generateSpan(sessionId, positions[sessionId]['name']);
-                const cursorImg = generateImg(sessionId, positions[sessionId]['color']);
-                cursors[sessionId] = cursorImg;
-                canvas.appendChild(cursorImg);
-                canvas.appendChild(nameSpan);
-            }
+            createCursor({sessionId, name: positions[sessionId]['name'], color: positions[sessionId]['color']});
 
             setPositions({
                 x: positions[sessionId]['x'],
@@ -93,6 +86,16 @@
             }, sessionId);
         }
     });
+
+    // on new user joind event, append cursor
+    socket.on('user-joined', (userPositions, sessionId) => {
+        createCursor({sessionId, name: userPositions['name'], color: userPositions['color']});
+
+        setPositions({
+            x: userPositions['x'],
+            y: userPositions['y']
+        }, sessionId);
+    })
 
     canvas.addEventListener('mousemove', eventHandler); // handle mousemove event
     canvas.addEventListener('ontouchmove', eventHandler); // handle touch event
@@ -146,6 +149,19 @@
         nameStyle.top = data.y + 12 + 'px';
         nameStyle.left = data.x + 12 + 'px';
     }
+
+    // create cursor and append in DOM
+    function createCursor({sessionId, name, color}) {
+        // create cursors with sessionId, if not exists
+        if (!cursors.hasOwnProperty(sessionId)) {
+            const nameSpan = generateSpan(sessionId, name);
+            const cursorImg = generateImg(sessionId, color);
+            cursors[sessionId] = cursorImg;
+            canvas.appendChild(cursorImg);
+            canvas.appendChild(nameSpan);
+        }
+    }
+
 </script>
 </body>
 </html>
