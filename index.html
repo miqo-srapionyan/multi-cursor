@@ -100,7 +100,7 @@
     })
 
     canvas.addEventListener('mousemove', eventHandler); // handle mousemove event
-    canvas.addEventListener('ontouchmove', eventHandler); // handle touch event
+    canvas.addEventListener('touchmove', eventHandler); // handle touch event, todo not working
 
     // update other users positions
     socket.on('update-positions-client', (positions) => {
